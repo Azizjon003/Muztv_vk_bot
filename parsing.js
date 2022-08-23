@@ -70,3 +70,6 @@ const parseData = async (name) => {
 };
 
 module.exports = { linkOl, parseData, infoUrl, musicParser };
+
+// 5424351049:AAEROa2XS0wtXUBna30i-wm6E5eY0QaHqEo
+// 5497276792:AAEiXf_kniIyvmWYb5r11lVQHs-DxIt8aP0

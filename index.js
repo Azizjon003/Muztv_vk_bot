@@ -1,13 +1,27 @@
 const { bottom } = require("cli-color/move");
+
 const dotenv = require("dotenv");
+
 dotenv.config({ path: "./config.env" });
 const { Telegraf, Scenes } = require("telegraf");
-const { linkOl, parseData } = require("./parsing");
+const { linkOl, parseData, musicParser } = require("./parsing");
+
 const db = require("./model/index");
-const bot = new Telegraf(process.env.token);
+const pageFunc = require("./utility/pagination");
+
+const bot = new Telegraf(process.env.token, {
+  polling: true,
+});
+let mal;
 const User = db.user;
+let start = 0;
+let end = 10;
+let umumiy = [];
+let qidirish;
 require("./model");
+
 let shart = 0;
+
 bot.start(async (ctx) => {
   console.log(ctx.update.message);
   const id = ctx.update.message.from.id;
@@ -31,53 +45,36 @@ bot.on("text", async (ctx) => {
   const id = ctx.update.message.from.id;
   const username = ctx.update.message.from.username || "No username";
   const text = ctx.update.message.text.trim().toLowerCase();
-  const data = await parseData(text);
-  console.log(data);
-  let arr = [];
-  let litleArr = [];
-  let litleArr2 = [];
-  let optionArr = [
-    {
-      text: "🔙",
-      callback_data: "back",
-    },
-    {
-      text: "🔜",
-      callback_data: "next",
-    },
-  ];
-  let obj = {};
-
-  let kattaText = `Jami Musiqalar  -  <b>${data.length}</b>\n\n`;
-  for (let i = 0; i < 10; i++) {
-    obj.text = i + 1;
-    obj.callback_data = data[i].name;
-
-    if (i < 5) {
-      litleArr.push(obj);
-    } else {
-      litleArr2.push(obj);
-    }
-    let parseMusicText = `<b>${i + 1}</b> - <b><i>${data[i].name}</i></b>\n`;
-    kattaText += parseMusicText;
-    obj = {};
-  }
-  arr.push(litleArr);
-  arr.push(litleArr2);
-  arr.push(optionArr);
-
-  console.log(arr);
-  ctx.telegram.sendMessage(id, `${kattaText}`, {
-    parse_mode: "HTML",
-    reply_markup: { inline_keyboard: arr },
-    resize_keyboard: true,
-  });
+  qidirish = text;
+  mal = await parseData(text);
+  end = mal.length < 10 ? mal.length : 10;
+  let umum = await pageFunc(mal, start, end, ctx, id);
+  umumiy.push(umum);
 });
 
 bot.on("callback_query", async (ctx) => {
   const id = ctx.update.callback_query.from.id;
   const data = ctx.update.callback_query.data;
-  console.log(ctx.update.callback_query);
+  console.log(mal);
+  if (data == "stop") {
+    const deleteM = ctx.update.callback_query.message.message_id;
+    ctx.telegram.deleteMessage(id, deleteM);
+  }
+
+  if (data == "next") {
+    // console.log(data);
+    console.log(umumiy);
+    const deleteM = ctx.update.callback_query.message.message_id;
+    ctx.telegram.deleteMessage(id, deleteM);
+    start = umumiy[0].start + 10;
+    end =
+      umumiy[0].end + 10 > mal.length
+        ? umumiy[0].end + (mal.length - umumiy[0].end)
+        : umumiy[0].end + 10;
+    umumiy = [];
+    let umum = await pageFunc(mal, start, end, ctx, id);
+    umumiy.push(umum);
+  }
 });
 
 bot.launch();
