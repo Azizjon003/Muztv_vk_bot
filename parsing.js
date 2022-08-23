@@ -60,12 +60,13 @@ let infoUrl = async (url, name = "download") => {
   await response.data.pipe(fs.createWriteStream(`${name}.mp3`));
 };
 
-const parseData = async (data) => {
-  let info = await musicParser("Doxxim");
+const parseData = async (name) => {
+  let info = await musicParser(name);
   if (!info) {
     throw new Error("hech qanday ma'lumot topilmadi");
   }
-  let malumot = await infoUrl(info[2].url, info[2].name);
+  return info;
+  // let malumot = await infoUrl(info[2].url, info[2].name);
 };
 
 module.exports = { linkOl, parseData, infoUrl, musicParser };

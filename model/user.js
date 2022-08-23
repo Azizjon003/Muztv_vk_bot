@@ -8,12 +8,16 @@ const userTg = (sequelize, DataTypes) => {
     username: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
     },
     telegram_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       unique: true,
+    },
+    role: {
+      type: DataTypes.ENUM,
+      values: ["user", "admin"],
+      defaultValue: "user",
     },
   });
   return user;
