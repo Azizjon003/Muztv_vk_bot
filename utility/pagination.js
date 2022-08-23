@@ -22,7 +22,7 @@ const pageFunc = async (data, start, end) => {
   //   console.log(data);
   for (let i = start; i < end; i++) {
     obj.text = i + 1;
-    obj.callback_data = i - 1;
+    obj.callback_data = i;
 
     if (i < start + 5) {
       litleArr.push(obj);

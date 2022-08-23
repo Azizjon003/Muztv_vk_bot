@@ -1,11 +1,11 @@
 const { bottom } = require("cli-color/move");
-
+const fs = require("fs");
 const dotenv = require("dotenv");
 
 require("console-stamp")(console);
 dotenv.config({ path: "./config.env" });
 const { Telegraf, Scenes } = require("telegraf");
-const { linkOl, parseData, musicParser } = require("./parsing");
+const { linkOl, parseData, musicParser, infoUrl } = require("./parsing");
 
 const db = require("./model/index");
 const pageFunc = require("./utility/pagination");
@@ -122,7 +122,38 @@ bot.on("callback_query", async (ctx) => {
     start = umum.start;
     end = umum.end;
   }
+  let son = data * 1;
+  if (Number.isInteger(son)) {
+    const url = mal[son].url;
+    const musicName = mal[son].name;
+    const data = await infoUrl(url, musicName);
+    if (!data) {
+    }
+    await ctx.telegram.sendMessage(id, "Yuklab Olindi");
+
+    const data1 = fs.readFileSync(`${__dirname}/${musicName}.mp3`);
+    await ctx.telegram.sendDocument(
+      id,
+      { source: data1, filename: `${musicName}.mp3` },
+      {
+        caption: `${musicName} \n @muztv_vk_bot code by <a href='https://t.me/Aazizjon0313'>@zizjon</a>`,
+        parse_mode: "HTML",
+        filename: `${musicName}.mp3`,
+      }
+    );
+  }
   console.log(start, end);
 });
-
+bot.catch((err, msg) => {
+  const id = msg.from.id;
+  msg.telegram.sendMessage(
+    id,
+    `Dastur hali to'liq rejimga o'tmadi shuning uchun xatoliklar bo'lishi mumkin`,
+    {
+      reply_markup: {
+        remove_keyboard: true,
+      },
+    }
+  );
+});
 bot.launch();

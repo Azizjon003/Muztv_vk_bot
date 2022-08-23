@@ -45,7 +45,7 @@ const musicParser = async (name) => {
 
 let infoUrl = async (url, name = "download") => {
   let html = await axios.get(url);
-  if (html) {
+  if (!html) {
     console.log(cli.redBright("info urlda xato bor"));
   }
   const $ = cheerio.load(html.data);
@@ -58,6 +58,7 @@ let infoUrl = async (url, name = "download") => {
   console.log(url1);
   let response = await axios.get(url1, { responseType: "stream" });
   await response.data.pipe(fs.createWriteStream(`${name}.mp3`));
+  return true;
 };
 
 const parseData = async (name) => {
