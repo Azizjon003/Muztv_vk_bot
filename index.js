@@ -2,6 +2,7 @@ const { bottom } = require("cli-color/move");
 
 const dotenv = require("dotenv");
 
+require("console-stamp")(console);
 dotenv.config({ path: "./config.env" });
 const { Telegraf, Scenes } = require("telegraf");
 const { linkOl, parseData, musicParser } = require("./parsing");
@@ -19,8 +20,7 @@ const User = db.user;
 let start = 0;
 let end = 10;
 let umumiy = [];
-let qidirish;
-let umum = {};
+
 require("./model");
 
 let shart = 0;
@@ -48,11 +48,13 @@ bot.on("text", async (ctx) => {
   const id = ctx.update.message.from.id;
   const username = ctx.update.message.from.username || "No username";
   const text = ctx.update.message.text.trim().toLowerCase();
-  qidirish = text;
   mal = await parseData(text);
-  end = end < 10 ? mal.length : 10;
+  console.log(mal);
+  end = mal.length < 10 ? mal.length : 10;
   let umumInfo = await pageFunc(mal, start, end);
+
   const kattaText = umumInfo.kattaText;
+
   const arr = umumInfo.arr;
   start = umumInfo.start;
   end = umumInfo.end;
@@ -70,27 +72,57 @@ bot.on("callback_query", async (ctx) => {
   const deleteM = ctx.update.callback_query.message.message_id;
   if (data == "stop") {
     ctx.telegram.deleteMessage(id, deleteM);
-    umumiy = [];
+    start = 0;
+    end = mal.length < 10 ? mal.length : 10;
   }
 
   if (data == "next") {
-    console.log(umumiy);
-
     start = start + 10;
-    end = end + 10 > mal.length ? mal.length - end : end + 10;
+    end = end + 10 > mal.length ? mal.length - start + end : end + 10;
+    if (end == mal.length || end > mal.length) {
+      console.log("ishla", start, end);
+      start =
+        mal.length % 10 == 0 ? mal.length - 10 : mal.length - (mal.length % 10);
+      end = mal.length;
+      console.log(start, end);
+    }
+    console.log(start, end);
     ctx.telegram.deleteMessage(id, deleteM);
     let umum = await pageFunc(mal, start, end);
-    const kattaText = umumInfo.kattaText;
-    const arr = umumInfo.arr;
-    start = umumInfo.start;
-    end = umumInfo.end;
+    const kattaText = umum.kattaText;
+    const arr = umum.arr;
+
     ctx.telegram.sendMessage(id, kattaText, {
       parse_mode: "HTML",
       reply_markup: {
         inline_keyboard: arr,
       },
     });
+    start = umum.start;
+    end = umum.end;
   }
+  if (data == "back") {
+    start = start - 10 > 0 ? start - 10 : (start = 0);
+    end = end % 10 !== 0 ? end - start : end - 10;
+    if (end == 0) {
+      end = mal.length < 10 ? mal.length : 10;
+    }
+    ctx.telegram.deleteMessage(id, deleteM);
+    let umum = await pageFunc(mal, start, end);
+    const kattaText = umum.kattaText;
+    const arr = umum.arr;
+    console.log(start, end);
+
+    ctx.telegram.sendMessage(id, kattaText, {
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: arr,
+      },
+    });
+    start = umum.start;
+    end = umum.end;
+  }
+  console.log(start, end);
 });
 
 bot.launch();
