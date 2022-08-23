@@ -12,12 +12,15 @@ const pageFunc = require("./utility/pagination");
 const bot = new Telegraf(process.env.token, {
   polling: true,
 });
+
 let mal;
 const User = db.user;
+
 let start = 0;
 let end = 10;
 let umumiy = [];
 let qidirish;
+let umum = {};
 require("./model");
 
 let shart = 0;
@@ -47,33 +50,46 @@ bot.on("text", async (ctx) => {
   const text = ctx.update.message.text.trim().toLowerCase();
   qidirish = text;
   mal = await parseData(text);
-  end = mal.length < 10 ? mal.length : 10;
-  let umum = await pageFunc(mal, start, end, ctx, id);
-  umumiy.push(umum);
+  end = end < 10 ? mal.length : 10;
+  let umumInfo = await pageFunc(mal, start, end);
+  const kattaText = umumInfo.kattaText;
+  const arr = umumInfo.arr;
+  start = umumInfo.start;
+  end = umumInfo.end;
+  ctx.telegram.sendMessage(id, kattaText, {
+    parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: arr,
+    },
+  });
 });
 
 bot.on("callback_query", async (ctx) => {
   const id = ctx.update.callback_query.from.id;
   const data = ctx.update.callback_query.data;
-  console.log(mal);
+  const deleteM = ctx.update.callback_query.message.message_id;
   if (data == "stop") {
-    const deleteM = ctx.update.callback_query.message.message_id;
     ctx.telegram.deleteMessage(id, deleteM);
+    umumiy = [];
   }
 
   if (data == "next") {
-    // console.log(data);
     console.log(umumiy);
-    const deleteM = ctx.update.callback_query.message.message_id;
+
+    start = start + 10;
+    end = end + 10 > mal.length ? mal.length - end : end + 10;
     ctx.telegram.deleteMessage(id, deleteM);
-    start = umumiy[0].start + 10;
-    end =
-      umumiy[0].end + 10 > mal.length
-        ? umumiy[0].end + (mal.length - umumiy[0].end)
-        : umumiy[0].end + 10;
-    umumiy = [];
-    let umum = await pageFunc(mal, start, end, ctx, id);
-    umumiy.push(umum);
+    let umum = await pageFunc(mal, start, end);
+    const kattaText = umumInfo.kattaText;
+    const arr = umumInfo.arr;
+    start = umumInfo.start;
+    end = umumInfo.end;
+    ctx.telegram.sendMessage(id, kattaText, {
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: arr,
+      },
+    });
   }
 });
 

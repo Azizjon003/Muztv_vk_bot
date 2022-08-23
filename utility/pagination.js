@@ -1,4 +1,4 @@
-const pageFunc = async (data, start, end, ctx, id) => {
+const pageFunc = async (data, start, end) => {
   let arr = [];
   let litleArr = [];
   let litleArr2 = [];
@@ -22,7 +22,7 @@ const pageFunc = async (data, start, end, ctx, id) => {
   //   console.log(data);
   for (let i = start; i < end; i++) {
     obj.text = i + 1;
-    obj.callback_data = data[i].name;
+    obj.callback_data = data[i].url;
 
     if (i < start + 5) {
       litleArr.push(obj);
@@ -37,16 +37,7 @@ const pageFunc = async (data, start, end, ctx, id) => {
   arr.push(litleArr2);
   arr.push(optionArr);
 
-  //   console.log(arr);
-  ctx.telegram.sendMessage(id, `${kattaText}`, {
-    parse_mode: "HTML",
-    reply_markup: { inline_keyboard: arr },
-    resize_keyboard: true,
-  });
-  return {
-    start,
-    end,
-  };
+  return { arr, kattaText, start, end };
 };
 
 module.exports = pageFunc;
