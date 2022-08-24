@@ -24,7 +24,7 @@ const musicParser = async (name) => {
     throw new Error("Dasturda qo'shiqlar topilmadi");
   }
   const forNum = Math.floor(soni / 20) + 1;
-  console.log(forNum);
+  // console.log(forNum);
   let info = {};
   let arr = [];
   for (let i = 1; i <= forNum; i++) {
@@ -39,7 +39,7 @@ const musicParser = async (name) => {
   }
 
   fs.writeFileSync("json.json", JSON.stringify(arr), () => {});
-  console.log(arr.length);
+  // console.log(arr.length);
   return arr;
 };
 
@@ -56,8 +56,8 @@ let infoUrl = async (url, name = "download") => {
   let url1 = data.attr().href;
 
   console.log(url1);
-  let response = await axios.get(url1, { responseType: "stream" });
-  await response.data.pipe(fs.createWriteStream(`${name}.mp3`));
+  let data1 = await axios.get(url1, { responseType: "stream" });
+  await data1.data.pipe(fs.createWriteStream(`${name}.mp3`));
   return true;
 };
 

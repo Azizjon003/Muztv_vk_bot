@@ -10,7 +10,7 @@ const userTg = (sequelize, DataTypes) => {
       allowNull: false,
     },
     telegram_id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: false,
       unique: true,
     },
