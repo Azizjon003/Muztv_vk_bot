@@ -1,11 +1,12 @@
-const pageFunc = async (data, start, end) => {
+const pageFunc = async (data, start, end, mal, mal1) => {
   let arr = [];
   let litleArr = [];
   let litleArr2 = [];
+
   let optionArr = [
     {
       text: "🔙",
-      callback_data: "back",
+      callback_data: `back ${end} ${mal1} ${start} ${mal}`,
     },
     {
       text: "🛑",
@@ -13,23 +14,25 @@ const pageFunc = async (data, start, end) => {
     },
     {
       text: "🔜",
-      callback_data: "next",
+      callback_data: `next ${end} ${mal1} ${start} ${mal}`,
     },
   ];
   let obj = {};
-
-  let kattaText = `Jami Musiqalar  -  <b>${data.length}</b>\n\n`;
+  console.log(data);
+  let kattaText = `Jami Musiqalar  -  <b>${mal1}</b>\n\n`;
   //   console.log(data);
-  for (let i = start; i < end; i++) {
+  for (let i = 0; i < end; i++) {
     obj.text = i + 1;
-    obj.callback_data = i;
+    obj.callback_data = i - start;
 
     if (i < start + 5) {
       litleArr.push(obj);
     } else {
       litleArr2.push(obj);
     }
-    let parseMusicText = `<b>${i + 1}</b> - <b><i>${data[i].name}</i></b>\n`;
+    let parseMusicText = `<b>${i + 1}</b> - <b><i>${
+      data[i - start].name
+    }</i></b>\n`;
     kattaText += parseMusicText;
     obj = {};
   }
@@ -37,7 +40,7 @@ const pageFunc = async (data, start, end) => {
   arr.push(litleArr2);
   arr.push(optionArr);
 
-  return { arr, kattaText, start, end };
+  return { arr, kattaText };
 };
 
 module.exports = pageFunc;

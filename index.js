@@ -5,7 +5,14 @@ const dotenv = require("dotenv");
 require("console-stamp")(console);
 dotenv.config({ path: "./config.env" });
 const { Telegraf, Scenes } = require("telegraf");
-const { linkOl, parseData, musicParser, infoUrl } = require("./parsing");
+const {
+  linkOl,
+  parseData,
+  musicParser,
+  infoUrl,
+  parserQism,
+  musicLangth,
+} = require("./parsing");
 
 const db = require("./model/index");
 const pageFunc = require("./utility/pagination");
@@ -14,12 +21,7 @@ const bot = new Telegraf(process.env.token, {
   polling: true,
 });
 
-let mal;
 const User = db.user;
-
-let start = 0;
-let end = 10;
-let umumiy = [];
 
 require("./model");
 
@@ -48,16 +50,14 @@ bot.on("text", async (ctx) => {
   const id = ctx.update.message.from.id;
   const username = ctx.update.message.from.username || "No username";
   const text = ctx.update.message.text.trim().toLowerCase();
-  mal = await parseData(text);
-  // console.log(mal);
-  end = mal.length < 10 ? mal.length : 10;
-  let umumInfo = await pageFunc(mal, start, end);
+  const mal1 = await musicLangth(text);
+  let start = 0;
+  let ended = mal1.length < 10 ? mal1.length : start + 10;
+  let mal = await parserQism(text, start, ended);
 
+  let umumInfo = await pageFunc(mal, start, ended, text, mal1);
   const kattaText = umumInfo.kattaText;
-
   const arr = umumInfo.arr;
-  start = umumInfo.start;
-  end = umumInfo.end;
   ctx.telegram.sendMessage(id, kattaText, {
     parse_mode: "HTML",
     reply_markup: {
@@ -74,23 +74,27 @@ bot.on("callback_query", async (ctx) => {
 
   if (data == "stop") {
     ctx.telegram.deleteMessage(id, deleteM);
-    start = 0;
-    end = mal.length < 10 ? mal.length : 10;
   }
 
-  if (data == "next") {
-    start = start + 10;
-    end = end + 10 > mal.length ? mal.length - start + end : end + 10;
-    if (end == mal.length || end > mal.length) {
-      console.log("ishla", start, end);
-      start =
-        mal.length % 10 == 0 ? mal.length - 10 : mal.length - (mal.length % 10);
-      end = mal.length;
-      console.log(start, end);
-    }
-    console.log(start, end);
+  if (data.includes("next")) {
+    console.log("ishla next");
+
+    let end = data.split(" ")[1] * 1;
+    const soni = data.split(" ")[2] * 1;
+    let start = data.split(" ")[3] * 1;
+    let text = data.split(" ")[4];
+    end = end + 10 <= soni ? end + 10 : soni;
+    start = start + 10 > end ? start + soni - end : start + 10;
+    // if (end == mal.length || end > mal.length) {
+    //   console.log("ishla", start, end);
+    //   start =
+    //     mal.length % 10 == 0 ? mal.length - 10 : mal.length - (mal.length % 10);
+    //   end = mal.length;
+    //   console.log(start, end);
+    // }
+    let mal = await parserQism(text, start, end);
     ctx.telegram.deleteMessage(id, deleteM);
-    let umum = await pageFunc(mal, start, end);
+    let umum = await pageFunc(mal, start, end, text, soni);
     const kattaText = umum.kattaText;
     const arr = umum.arr;
 
@@ -100,20 +104,21 @@ bot.on("callback_query", async (ctx) => {
         inline_keyboard: arr,
       },
     });
-    start = umum.start;
-    end = umum.end;
   }
-  if (data == "back") {
-    start = start - 10 > 0 ? start - 10 : (start = 0);
-    end = end % 10 !== 0 ? end - start : end - 10;
-    if (end == 0) {
-      end = mal.length < 10 ? mal.length : 10;
-    }
-    ctx.telegram.deleteMessage(id, deleteM);
-    let umum = await pageFunc(mal, start, end);
+  if (data.includes("back")) {
+    let end = data.split(" ")[1] * 1;
+    const soni = data.split(" ")[2] * 1;
+    let start = data.split(" ")[3] * 1;
+    let text = data.split(" ")[4];
+    end = end - 10 <= 0 ? soni : end - 10;
+    start = start - 10 <= 0 ? 0 : start - 10;
+    let mal = await parserQism(text, start, end);
+
+    let umum = await pageFunc(mal, start, end, text, soni);
     const kattaText = umum.kattaText;
     const arr = umum.arr;
     console.log(start, end);
+    ctx.telegram.deleteMessage(id, deleteM);
 
     ctx.telegram.sendMessage(id, kattaText, {
       parse_mode: "HTML",
@@ -126,6 +131,8 @@ bot.on("callback_query", async (ctx) => {
   }
   let son = data * 1;
   if (Number.isInteger(son)) {
+    console.log(son);
+    console.log(mal);
     const url = mal[son].url;
     const musicName = mal[son].name;
     const data = await infoUrl(url, id);
@@ -146,18 +153,17 @@ bot.on("callback_query", async (ctx) => {
       parse_mode: "HTML",
     });
   }
-  console.log(start, end);
 });
-bot.catch((err, msg) => {
-  const id = msg.from.id;
-  msg.telegram.sendMessage(
-    id,
-    `Dastur hali to'liq rejimga o'tmadi shuning uchun xatoliklar bo'lishi mumkin,${err.message}`,
-    {
-      reply_markup: {
-        remove_keyboard: true,
-      },
-    }
-  );
-});
+// bot.catch((err, msg) => {
+//   const id = msg.from.id;
+//   msg.telegram.sendMessage(
+//     id,
+//     `Dastur hali to'liq rejimga o'tmadi shuning uchun xatoliklar bo'lishi mumkin,${err.message}`,
+//     {
+//       reply_markup: {
+//         remove_keyboard: true,
+//       },
+//     }
+//   );
+// });
 bot.launch();

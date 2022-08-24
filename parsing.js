@@ -12,7 +12,6 @@ const headers = {
 const linkOl = async (params, start = 1) => {
   let url = `http://muztv.net/index.php?do=search&subaction=search&search_start=${start}&full_search=0&result_from=100&story=${params}`;
   let data = await axios.get(url, { headers });
-  //   if// data qismini yozish
   return data.data;
 };
 
@@ -38,6 +37,38 @@ const musicParser = async (name) => {
     });
   }
   return arr;
+};
+const parserQism = async (name, start, end) => {
+  const html = await linkOl(name);
+  const $ = cheerio.load(html);
+  const soni = $(".berrors").text().trim().split(" ")[4] * 1;
+  let info = {};
+  let arr = [];
+  let arr1 = [];
+  console.log(start, end);
+  const son = start / 10;
+  let shart = Math.round(end / 10) % 2 == 0 && son % 2 == 1 ? false : true;
+  let i = son % 2 == 0 ? Math.round(son / 2) : Math.round(son / 2) + 1;
+  console.log(i);
+  const html1 = await linkOl(name, i);
+  const $$ = cheerio.load(html1);
+  let j = 0;
+  $$(".play-desc").each((_, e) => {
+    j++;
+    if (j <= 10 && shart) {
+      info.name = $$(e).text().trim();
+      info.url = $$(e).attr().href;
+      arr.push(info);
+      info = {};
+    }
+    if (j > 10 && !shart) {
+      info.name = $$(e).text().trim();
+      info.url = $$(e).attr().href;
+      arr1.push(info);
+      info = {};
+    }
+  });
+  return shart ? arr : arr1;
 };
 
 let infoUrl = async (url, name = "download") => {
@@ -66,8 +97,22 @@ const parseData = async (name) => {
   return info;
   // let malumot = await infoUrl(info[2].url, info[2].name);
 };
+const musicLangth = async (name) => {
+  const html = await linkOl(name);
+  const $ = cheerio.load(html);
+  const soni = $(".berrors").text().trim().split(" ")[4] * 1;
+  console.log(soni);
+  return soni;
+};
 
-module.exports = { linkOl, parseData, infoUrl, musicParser };
+module.exports = {
+  linkOl,
+  parseData,
+  infoUrl,
+  musicParser,
+  parserQism,
+  musicLangth,
+};
 
 // 5424351049:AAEROa2XS0wtXUBna30i-wm6E5eY0QaHqEo
 // 5497276792:AAEiXf_kniIyvmWYb5r11lVQHs-DxIt8aP0
