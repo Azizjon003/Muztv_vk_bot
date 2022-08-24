@@ -37,9 +37,6 @@ const musicParser = async (name) => {
       info = {};
     });
   }
-
-  fs.writeFileSync("json.json", JSON.stringify(arr), () => {});
-  // console.log(arr.length);
   return arr;
 };
 
@@ -58,7 +55,7 @@ let infoUrl = async (url, name = "download") => {
   console.log(url1);
   let data1 = await axios.get(url1, { responseType: "stream" });
   await data1.data.pipe(fs.createWriteStream(`${name}.mp3`));
-  return true;
+  return url1;
 };
 
 const parseData = async (name) => {

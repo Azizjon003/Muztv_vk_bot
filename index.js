@@ -49,7 +49,7 @@ bot.on("text", async (ctx) => {
   const username = ctx.update.message.from.username || "No username";
   const text = ctx.update.message.text.trim().toLowerCase();
   mal = await parseData(text);
-  console.log(mal);
+  // console.log(mal);
   end = mal.length < 10 ? mal.length : 10;
   let umumInfo = await pageFunc(mal, start, end);
 
@@ -70,6 +70,8 @@ bot.on("callback_query", async (ctx) => {
   const id = ctx.update.callback_query.from.id;
   const data = ctx.update.callback_query.data;
   const deleteM = ctx.update.callback_query.message.message_id;
+  console.log(ctx.update);
+
   if (data == "stop") {
     ctx.telegram.deleteMessage(id, deleteM);
     start = 0;
@@ -136,16 +138,13 @@ bot.on("callback_query", async (ctx) => {
       name: musicName,
       user: userId,
     });
+
     const data3 = fs.readFileSync(`${__dirname}/${id}.mp3`);
-    console.log(data3);
-    await ctx.telegram.sendAudio(
-      id,
-      { source: data3, filename: `${musicName}.mp3` },
-      {
-        caption: `${musicName} \n @muztv_vk_bot code by <a href='https://t.me/Aazizjon0313'>@zizjon</a>`,
-        parse_mode: "HTML",
-      }
-    );
+
+    await ctx.telegram.sendAudio(id, data, {
+      caption: `${musicName} \n @muztv_vk_bot code by <a href='https://t.me/Aazizjon0313'>@zizjon</a>`,
+      parse_mode: "HTML",
+    });
   }
   console.log(start, end);
 });
