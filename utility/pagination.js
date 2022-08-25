@@ -21,7 +21,7 @@ const pageFunc = async (data, start, end, mal, mal1) => {
   console.log(data);
   let kattaText = `Jami Musiqalar  -  <b>${mal1}</b>\n\n`;
   //   console.log(data);
-  for (let i = 0; i < end; i++) {
+  for (let i = start; i < end; i++) {
     obj.text = i + 1;
     obj.callback_data = i - start;
 

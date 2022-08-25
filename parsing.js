@@ -5,12 +5,12 @@ const fs = require("fs");
 const headers = {
   headers: {
     "User-Agent":
-      "Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) Version/11.0 Mobile/15A5341f Safari/604.1",
+      "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
   },
 };
 // headers qism tugadi
 const linkOl = async (params, start = 1) => {
-  let url = `http://muztv.net/index.php?do=search&subaction=search&search_start=${start}&full_search=0&result_from=100&story=${params}`;
+  let url = `http://muztv.net/index.php?do=search&subaction=search&search_start=${start}&full_search=0&result_from=1000&story=${params}`;
   let data = await axios.get(url, { headers });
   return data.data;
 };
@@ -47,28 +47,27 @@ const parserQism = async (name, start, end) => {
   let arr1 = [];
   console.log(start, end);
   const son = start / 10;
-  let shart = Math.round(end / 10) % 2 == 0 && son % 2 == 1 ? false : true;
-  let i = son % 2 == 0 ? Math.round(son / 2) : Math.round(son / 2) + 1;
-  console.log(i);
+  let i = Math.ceil(Math.ceil(end / 10) / 2);
+  let shart = Math.ceil(end / 10) % 2 == 0 ? 1 : 0;
   const html1 = await linkOl(name, i);
   const $$ = cheerio.load(html1);
   let j = 0;
   $$(".play-desc").each((_, e) => {
     j++;
-    if (j <= 10 && shart) {
+    if (j <= 10) {
       info.name = $$(e).text().trim();
       info.url = $$(e).attr().href;
       arr.push(info);
       info = {};
     }
-    if (j > 10 && !shart) {
+    if (j > 10) {
       info.name = $$(e).text().trim();
       info.url = $$(e).attr().href;
       arr1.push(info);
       info = {};
     }
   });
-  return shart ? arr : arr1;
+  return shart == 1 ? arr1 : arr;
 };
 
 let infoUrl = async (url, name = "download") => {
@@ -101,8 +100,9 @@ const musicLangth = async (name) => {
   const html = await linkOl(name);
   const $ = cheerio.load(html);
   const soni = $(".berrors").text().trim().split(" ")[4] * 1;
-  console.log(soni);
-  return soni;
+  let son = soni;
+  console.log(son);
+  return son;
 };
 
 module.exports = {

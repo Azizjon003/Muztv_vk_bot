@@ -51,10 +51,11 @@ bot.on("text", async (ctx) => {
   const username = ctx.update.message.from.username || "No username";
   const text = ctx.update.message.text.trim().toLowerCase();
   const mal1 = await musicLangth(text);
+  console.log(mal1);
   let start = 0;
-  let ended = mal1.length < 10 ? mal1.length : start + 10;
+  let ended = mal1 < 10 ? mal1 : start + 10;
   let mal = await parserQism(text, start, ended);
-
+  console.log(start, ended);
   let umumInfo = await pageFunc(mal, start, ended, text, mal1);
   const kattaText = umumInfo.kattaText;
   const arr = umumInfo.arr;
@@ -70,6 +71,7 @@ bot.on("callback_query", async (ctx) => {
   const id = ctx.update.callback_query.from.id;
   const data = ctx.update.callback_query.data;
   const deleteM = ctx.update.callback_query.message.message_id;
+  // const queryId = ctx.update.callback_query.id;
   console.log(ctx.update);
 
   if (data == "stop") {
@@ -85,13 +87,11 @@ bot.on("callback_query", async (ctx) => {
     let text = data.split(" ")[4];
     end = end + 10 <= soni ? end + 10 : soni;
     start = start + 10 > end ? start + soni - end : start + 10;
-    // if (end == mal.length || end > mal.length) {
-    //   console.log("ishla", start, end);
-    //   start =
-    //     mal.length % 10 == 0 ? mal.length - 10 : mal.length - (mal.length % 10);
-    //   end = mal.length;
-    //   console.log(start, end);
-    // }
+
+    if (end >= soni) {
+      ctx.answerCbQuery(`Pagelar tugadi`, true);
+      return;
+    }
     let mal = await parserQism(text, start, end);
     ctx.telegram.deleteMessage(id, deleteM);
     let umum = await pageFunc(mal, start, end, text, soni);
@@ -110,8 +110,13 @@ bot.on("callback_query", async (ctx) => {
     const soni = data.split(" ")[2] * 1;
     let start = data.split(" ")[3] * 1;
     let text = data.split(" ")[4];
-    end = end - 10 <= 0 ? soni : end - 10;
+    end = end - 10 <= 0 ? soni : end == soni ? end - (soni - start) : end - 10;
     start = start - 10 <= 0 ? 0 : start - 10;
+
+    if (start <= 0) {
+      ctx.answerCbQuery(`Pagelar tugadi`, true);
+      return;
+    }
     let mal = await parserQism(text, start, end);
 
     let umum = await pageFunc(mal, start, end, text, soni);
