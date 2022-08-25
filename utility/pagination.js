@@ -20,11 +20,12 @@ const pageFunc = async (data, start, end, mal, mal1) => {
   let obj = {};
   console.log(data);
   let kattaText = `Jami Musiqalar  -  <b>${mal1}</b>\n\n`;
-  //   console.log(data);
+
   for (let i = start; i < end; i++) {
     obj.text = i + 1;
     obj.callback_data = i - start;
 
+    console.log(obj);
     if (i < start + 5) {
       litleArr.push(obj);
     } else {

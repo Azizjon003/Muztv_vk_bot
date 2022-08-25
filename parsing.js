@@ -83,8 +83,8 @@ let infoUrl = async (url, name = "download") => {
   let url1 = data.attr().href;
 
   console.log(url1);
-  let data1 = await axios.get(url1, { responseType: "stream" });
-  await data1.data.pipe(fs.createWriteStream(`${name}.mp3`));
+  // let data1 = await axios.get(url1, { responseType: "stream" });
+  // await data1.data.pipe(fs.createWriteStream(`${name}.mp3`));
   return url1;
 };
 

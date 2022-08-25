@@ -86,11 +86,10 @@ bot.on("callback_query", async (ctx) => {
     let start = data.split(" ")[3] * 1;
     let text = data.split(" ")[4];
     end = end + 10 <= soni ? end + 10 : soni;
-    start = start + 10 > end ? start + soni - end : start + 10;
+    start = start + 10 >= end ? start + soni - end : start + 10;
 
     if (end >= soni) {
       ctx.answerCbQuery(`Pagelar tugadi`, true);
-      return;
     }
     let mal = await parserQism(text, start, end);
     ctx.telegram.deleteMessage(id, deleteM);
@@ -110,10 +109,11 @@ bot.on("callback_query", async (ctx) => {
     const soni = data.split(" ")[2] * 1;
     let start = data.split(" ")[3] * 1;
     let text = data.split(" ")[4];
-    end = end - 10 <= 0 ? soni : end == soni ? end - (soni - start) : end - 10;
-    start = start - 10 <= 0 ? 0 : start - 10;
+    end = end - 10 < 0 ? soni : end == soni ? end - (soni - start) : end - 10;
+    start = start - 10 < 0 ? 0 : start - 10;
 
-    if (start <= 0) {
+    if (start < 0 || end == start) {
+      console.log("ishla back");
       ctx.answerCbQuery(`Pagelar tugadi`, true);
       return;
     }
@@ -136,14 +136,25 @@ bot.on("callback_query", async (ctx) => {
   }
   let son = data * 1;
   if (Number.isInteger(son)) {
-    console.log(son);
-    console.log(mal);
-    const url = mal[son].url;
-    const musicName = mal[son].name;
+    let uzun =
+      ctx.update.callback_query.message.reply_markup.inline_keyboard.length;
+    const ish =
+      ctx.update.callback_query.message.reply_markup.inline_keyboard[
+        uzun - 1
+      ][0].callback_data;
+    console.log(ish);
+
+    let end = ish.split(" ")[1] * 1;
+    let start = ish.split(" ")[3] * 1;
+    let text = ish.split(" ")[4];
+    const music = await parserQism(text, start, end);
+    let url = music[son].url;
+    let musicName = music[son].name;
     const data = await infoUrl(url, id);
     if (!data) {
     }
-    await ctx.telegram.sendMessage(id, "Yuklab Olindi");
+    ctx.answerCbQuery(`Yuklab Olindi`, true);
+    // await ctx.telegram.sendMessage(id, "Yuklab Olindi");
     const user = await User.findOne({ where: { telegram_id: id } });
     const userId = user.dataValues.id;
     const create = await db.music.create({
@@ -159,6 +170,7 @@ bot.on("callback_query", async (ctx) => {
     });
   }
 });
+
 // bot.catch((err, msg) => {
 //   const id = msg.from.id;
 //   msg.telegram.sendMessage(
