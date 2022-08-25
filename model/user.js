@@ -19,6 +19,14 @@ const userTg = (sequelize, DataTypes) => {
       values: ["user", "admin"],
       defaultValue: "user",
     },
+    command: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    activ: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
   });
   return user;
 };

@@ -32,12 +32,24 @@ bot.start(async (ctx) => {
   const id = ctx.update.message.from.id;
 
   const username = ctx.update.message.from.username || "No username";
+  const first_name = ctx.update.message.from.first_name;
   const user = await User.findOne({ where: { telegram_id: id } });
+
   if (!user) {
     const create = await User.create({
       username: username,
       telegram_id: id,
     });
+  } else {
+    if (user.role == "admin") {
+      ctx.telegram.sendMessage(
+        id,
+        `Admin <b>${first_name}</b> 😎 bizning botga xush kelibsiz \n\n<b>Admin huqulari</b>\n 1. <i>Userlar ro'yxatini ko'rish</i> =>  /users \n 2.<i> Userlarni o'chirish </i> => /deleteuser \n 3.<i> Userlarni admin qilish</i> => /adminuser \n 4.<i> Userlarni admindan chiqarish </i> => /admindelete \n 5. <i>userlarga xabar yuborish</i> => /sendmessage`,
+        {
+          parse_mode: "HTML",
+        }
+      );
+    }
   }
 
   ctx.telegram.sendMessage(
@@ -46,25 +58,239 @@ bot.start(async (ctx) => {
   );
 });
 
+bot.command("users", async (ctx) => {
+  const id = ctx.update.message.from.id;
+  const user = await User.findOne({
+    where: { telegram_id: id },
+  });
+  if (user.role == "admin") {
+    const users = await User.findAll();
+    let userSoni = `Userlar ro'yhati: ${users.length} \n\n`;
+    let text = "";
+    users.forEach((e) => {
+      text += `<b>id: ${e.id} </b><b>${e.username}</b> \t <i> activ: <b>${e.activ}</b>  <b>role:  <i>${e.role}</i></b></i>\n`;
+    });
+    ctx.telegram.sendMessage(id, userSoni + text, { parse_mode: "HTML" });
+  } else {
+    ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
+  }
+});
+bot.command("deleteuser", async (ctx) => {
+  const id = ctx.update.message.from.id;
+  const user = await User.findOne({
+    where: { telegram_id: id },
+  });
+  if (user.role == "admin") {
+    const users = await User.update(
+      {
+        command: "deleteuser",
+      },
+      {
+        where: {
+          telegram_id: id,
+        },
+      }
+    );
+    ctx.telegram.sendMessage(id, "User o'chirish uchun uning id sini kiritng");
+  } else {
+    ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
+  }
+});
+bot.command("adminuser", async (ctx) => {
+  const id = ctx.update.message.from.id;
+  const user = await User.findOne({
+    where: { telegram_id: id },
+  });
+  if (user.role == "admin") {
+    const users = await User.update(
+      {
+        command: "adminuser",
+      },
+      {
+        where: {
+          telegram_id: id,
+        },
+      }
+    );
+    ctx.telegram.sendMessage(
+      id,
+      "Userni admin qilish uchun uning id sini kiritng"
+    );
+  } else {
+    ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
+  }
+});
+bot.command("admindelete", async (ctx) => {
+  const id = ctx.update.message.from.id;
+  const user = await User.findOne({
+    where: { telegram_id: id },
+  });
+  if (user.role == "admin") {
+    const users = await User.update(
+      {
+        command: "admindelete",
+      },
+      {
+        where: {
+          telegram_id: id,
+        },
+      }
+    );
+    ctx.telegram.sendMessage(
+      id,
+      "Userdan adminni olish uchun uning id sini kiritng"
+    );
+  } else {
+    ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
+  }
+});
+bot.command("sendmessage", async (ctx) => {
+  const id = ctx.update.message.from.id;
+  const user = await User.findOne({
+    where: { telegram_id: id },
+  });
+  if (user.role == "admin") {
+    const users = await User.update(
+      {
+        command: "sendmessage",
+      },
+      {
+        where: {
+          telegram_id: id,
+        },
+      }
+    );
+    ctx.telegram.sendMessage(id, "Jo'natmoqchi bo'lgan smsni kiriting");
+  } else {
+    ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
+  }
+});
 bot.on("text", async (ctx) => {
   const id = ctx.update.message.from.id;
-  const username = ctx.update.message.from.username || "No username";
-  const text = ctx.update.message.text.trim().toLowerCase();
-  const mal1 = await musicLangth(text);
-  console.log(mal1);
-  let start = 0;
-  let ended = mal1 < 10 ? mal1 : start + 10;
-  let mal = await parserQism(text, start, ended);
-  console.log(start, ended);
-  let umumInfo = await pageFunc(mal, start, ended, text, mal1);
-  const kattaText = umumInfo.kattaText;
-  const arr = umumInfo.arr;
-  ctx.telegram.sendMessage(id, kattaText, {
-    parse_mode: "HTML",
-    reply_markup: {
-      inline_keyboard: arr,
+  const user = await User.findOne({
+    where: {
+      telegram_id: id,
     },
   });
+  if (user.activ) {
+    if ((user.role = "admin")) {
+      if (user.command == "deleteuser") {
+        const text = ctx.update.message.text.trim().toLowerCase() * 1;
+        const users = await User.update(
+          { activ: false },
+          {
+            where: {
+              id: text,
+            },
+          }
+        );
+
+        await User.update(
+          {
+            command: "",
+          },
+          {
+            where: {
+              telegram_id: id,
+            },
+          }
+        );
+        ctx.telegram.sendMessage(id, "User o'chirildi");
+      }
+      if (user.command == "adminuser") {
+        const text = ctx.update.message.text.trim().toLowerCase() * 1;
+        const users = await User.update(
+          { activ: true, role: "admin" },
+          {
+            where: {
+              id: text,
+            },
+          }
+        );
+
+        await User.update(
+          {
+            command: "",
+          },
+          {
+            where: {
+              telegram_id: id,
+            },
+          }
+        );
+        ctx.telegram.sendMessage(id, "User admin qilindi");
+      }
+      if (user.command == "admindelete") {
+        const text = ctx.update.message.text.trim().toLowerCase() * 1;
+        const users = await User.update(
+          { activ: true, role: "user" },
+          {
+            where: {
+              id: text,
+            },
+          }
+        );
+
+        await User.update(
+          {
+            command: "",
+          },
+          {
+            where: {
+              telegram_id: id,
+            },
+          }
+        );
+        ctx.telegram.sendMessage(id, "User admindan chiqarildi");
+      }
+      if (user.command == "sendmessage") {
+        const text = ctx.update.message.text.trim();
+        const users = await User.findAll();
+        console.log(users);
+        for (let i = 0; i < users.length; i++) {
+          await ctx.telegram.sendMessage(users[i].telegram_id, text, {
+            parse_mode: "HTML",
+          });
+        }
+
+        await User.update(
+          {
+            command: "",
+          },
+          {
+            where: {
+              telegram_id: id,
+            },
+          }
+        );
+
+        ctx.telegram.sendMessage(
+          id,
+          "Buyruqlar bajarildi menga Ruxsat Admin  😎"
+        );
+      }
+    } else {
+      const username = ctx.update.message.from.username || "No username";
+      const text = ctx.update.message.text.trim().toLowerCase();
+      const mal1 = await musicLangth(text);
+      console.log(mal1);
+      let start = 0;
+      let ended = mal1 < 10 ? mal1 : start + 10;
+      let mal = await parserQism(text, start, ended);
+      console.log(start, ended);
+      let umumInfo = await pageFunc(mal, start, ended, text, mal1);
+      const kattaText = umumInfo.kattaText;
+      const arr = umumInfo.arr;
+      ctx.telegram.sendMessage(id, kattaText, {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: arr,
+        },
+      });
+    }
+  } else {
+    ctx.telegram.sendMessage(id, "Siz admin tomonidan bloklangansiz");
+  }
 });
 
 bot.on("callback_query", async (ctx) => {
@@ -161,9 +387,6 @@ bot.on("callback_query", async (ctx) => {
       name: musicName,
       user: userId,
     });
-
-    const data3 = fs.readFileSync(`${__dirname}/${id}.mp3`);
-
     await ctx.telegram.sendAudio(id, data, {
       caption: `${musicName} \n @muztv_vk_bot code by <a href='https://t.me/Aazizjon0313'>@zizjon</a>`,
       parse_mode: "HTML",
