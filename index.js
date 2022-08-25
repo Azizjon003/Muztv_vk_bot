@@ -171,16 +171,17 @@ bot.on("callback_query", async (ctx) => {
   }
 });
 
-// bot.catch((err, msg) => {
-//   const id = msg.from.id;
-//   msg.telegram.sendMessage(
-//     id,
-//     `Dastur hali to'liq rejimga o'tmadi shuning uchun xatoliklar bo'lishi mumkin,${err.message}`,
-//     {
-//       reply_markup: {
-//         remove_keyboard: true,
-//       },
-//     }
-//   );
-// });
+bot.catch((err, msg) => {
+  const id = msg.from.id;
+  msg.telegram.sendMessage(
+    id,
+    `Xatolik qo'shiqni bazadan topa olmadim\n xato tasnifi: <i>${err.message}</i>\n /start buyrug'i bilan qayta ishga tushuring`,
+    {
+      parse_mode: "HTML",
+      reply_markup: {
+        remove_keyboard: true,
+      },
+    }
+  );
+});
 bot.launch();
