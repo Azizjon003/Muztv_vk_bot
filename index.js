@@ -5,14 +5,7 @@ const dotenv = require("dotenv");
 require("console-stamp")(console);
 dotenv.config({ path: "./config.env" });
 const { Telegraf, Scenes } = require("telegraf");
-const {
-  linkOl,
-  parseData,
-  musicParser,
-  infoUrl,
-  parserQism,
-  musicLangth,
-} = require("./parsing");
+const { infoUrl, parserQism, musicLangth } = require("./parsing");
 
 const db = require("./model/index");
 const pageFunc = require("./utility/pagination");
@@ -248,9 +241,11 @@ bot.on("text", async (ctx) => {
         const users = await User.findAll();
         console.log(users);
         for (let i = 0; i < users.length; i++) {
-          await ctx.telegram.sendMessage(users[i].telegram_id, text, {
-            parse_mode: "HTML",
-          });
+          setInterval(async () => {
+            await ctx.telegram.sendMessage(users[i].telegram_id, text, {
+              parse_mode: "HTML",
+            });
+          }, 100);
         }
 
         await User.update(
@@ -394,11 +389,21 @@ bot.on("callback_query", async (ctx) => {
   }
 });
 
-bot.catch((err, msg) => {
+bot.catch(async (err, msg) => {
   const id = msg.from.id;
+  await User.update(
+    {
+      command: "",
+    },
+    {
+      where: {
+        telegram_id: id,
+      },
+    }
+  );
   msg.telegram.sendMessage(
     id,
-    `Xatolik qo'shiqni bazadan topa olmadim\n xato tasnifi: <i>${err.message}</i>\n /start buyrug'i bilan qayta ishga tushuring`,
+    `Xatolik qo'shiqni bazadan topa olmadim\n xato tasnifi: <i>Qo'shiqni yuklashda yoki qo'shiqni topishda xatolik yuz berdi</i>\n /start buyrug'i bilan qayta ishga tushuring`,
     {
       parse_mode: "HTML",
       reply_markup: {
