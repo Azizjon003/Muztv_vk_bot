@@ -6,7 +6,7 @@ require("console-stamp")(console);
 dotenv.config({ path: "./config.env" });
 const { Telegraf, Scenes } = require("telegraf");
 const { infoUrl, parserQism, musicLangth } = require("./parsing");
-
+const krilLotin = require("./utility/lotinKril");
 const db = require("./model/index");
 const pageFunc = require("./utility/pagination");
 
@@ -37,7 +37,7 @@ bot.start(async (ctx) => {
     if (user.role == "admin") {
       ctx.telegram.sendMessage(
         id,
-        `Admin <b>${first_name}</b> 😎 bizning botga xush kelibsiz \n\n<b>Admin huqulari</b>\n 1. <i>Userlar ro'yxatini ko'rish</i> =>  /users \n 2.<i> Userlarni o'chirish </i> => /deleteuser \n 3.<i> Userlarni admin qilish</i> => /adminuser \n 4.<i> Userlarni admindan chiqarish </i> => /admindelete \n 5. <i>userlarga xabar yuborish</i> => /sendmessage`,
+        `Admin <b>${first_name}</b> 😎 bizning botga xush kelibsiz \n\n<b>Admin huqulari</b>\n 1. <i>Foydalanuvchilar ro'yxatini ko'rish</i> =>  /users \n 2.<i> Foydalanuvchini o'chirish </i> => /deleteuser \n 3.<i> Foydalanuvchini admin qilish</i> => /adminuser \n 4.<i> Foydalanuvchini admindan chiqarish </i> => /admindelete \n 5. <i>Foydalanuvchilarga xabar yuborish</i> => /sendmessage\n 6. <i>Foydalanuvchini faol qilish</i> => /adduser`,
         {
           parse_mode: "HTML",
         }
@@ -57,12 +57,21 @@ bot.command("users", async (ctx) => {
     where: { telegram_id: id },
   });
   if (user.role == "admin") {
-    const users = await User.findAll();
+    const users = await User.findAll({
+      order: [["id", "ASC"]],
+    });
     let userSoni = `Userlar ro'yhati: ${users.length} \n\n`;
     let text = "";
-    users.forEach((e) => {
+    let sana = 0;
+    for (let e of users) {
+      sana++;
       text += `<b>id: ${e.id} </b><b>${e.username}</b> \t <i> activ: <b>${e.activ}</b>  <b>role:  <i>${e.role}</i></b></i>\n`;
-    });
+      if (sana == 5) {
+        ctx.telegram.sendMessage(id, userSoni + text, { parse_mode: "HTML" });
+        text = "";
+        sana = 0;
+      }
+    }
     ctx.telegram.sendMessage(id, userSoni + text, { parse_mode: "HTML" });
   } else {
     ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
@@ -89,6 +98,31 @@ bot.command("deleteuser", async (ctx) => {
     ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
   }
 });
+
+bot.command("adduser", async (ctx) => {
+  const id = ctx.update.message.from.id;
+  const user = await User.findOne({
+    where: { telegram_id: id },
+  });
+  if (user.role == "admin") {
+    const users = await User.update(
+      {
+        command: "adduser",
+      },
+      {
+        where: {
+          telegram_id: id,
+        },
+      }
+    );
+    ctx.telegram.sendMessage(
+      id,
+      "Foydalanuvchini faol qilish uchun uning id sini kiritng"
+    );
+  } else {
+    ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
+  }
+});
 bot.command("adminuser", async (ctx) => {
   const id = ctx.update.message.from.id;
   const user = await User.findOne({
@@ -107,7 +141,7 @@ bot.command("adminuser", async (ctx) => {
     );
     ctx.telegram.sendMessage(
       id,
-      "Userni admin qilish uchun uning id sini kiritng"
+      "Foydalanuvchini admin qilish uchun uning id sini kiritng"
     );
   } else {
     ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
@@ -131,7 +165,7 @@ bot.command("admindelete", async (ctx) => {
     );
     ctx.telegram.sendMessage(
       id,
-      "Userdan adminni olish uchun uning id sini kiritng"
+      "Foydalanuvchidan adminni olish uchun uning id sini kiritng"
     );
   } else {
     ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
@@ -139,9 +173,10 @@ bot.command("admindelete", async (ctx) => {
 });
 bot.command("sendmessage", async (ctx) => {
   const id = ctx.update.message.from.id;
-  const user = await User.findOne({
+  let user = await User.findOne({
     where: { telegram_id: id },
   });
+
   if (user.role == "admin") {
     const users = await User.update(
       {
@@ -153,24 +188,49 @@ bot.command("sendmessage", async (ctx) => {
         },
       }
     );
-    ctx.telegram.sendMessage(id, "Jo'natmoqchi bo'lgan smsni kiriting");
+    ctx.telegram.sendMessage(id, "Jo'natmoqchi bo'lgan Xabarni kiriting");
   } else {
     ctx.telegram.sendMessage(id, "Siz admin emassiz bu huquqlar admin uchun");
   }
 });
 bot.on("text", async (ctx) => {
   const id = ctx.update.message.from.id;
-  const user = await User.findOne({
+  let user = await User.findOne({
     where: {
       telegram_id: id,
     },
   });
+  user = user.dataValues;
+  console.log(user);
   if (user.activ) {
-    if ((user.role = "admin")) {
+    if (user.role == "admin") {
       if (user.command == "deleteuser") {
         const text = ctx.update.message.text.trim().toLowerCase() * 1;
         const users = await User.update(
           { activ: false },
+          {
+            where: {
+              id: text,
+            },
+          }
+        );
+
+        await User.update(
+          {
+            command: "",
+          },
+          {
+            where: {
+              telegram_id: id,
+            },
+          }
+        );
+        ctx.telegram.sendMessage(id, "User o'chirildi");
+      }
+      if (user.command == "adduser") {
+        const text = ctx.update.message.text.trim().toLowerCase() * 1;
+        const users = await User.update(
+          { activ: true },
           {
             where: {
               id: text,
@@ -266,7 +326,9 @@ bot.on("text", async (ctx) => {
       }
     } else {
       const username = ctx.update.message.from.username || "No username";
-      const text = ctx.update.message.text.trim().toLowerCase();
+      console.log(username);
+      let text = ctx.update.message.text.trim().toLowerCase();
+      text = krilLotin(text);
       const mal1 = await musicLangth(text);
       console.log(mal1);
       let start = 0;
