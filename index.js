@@ -5,15 +5,9 @@ const dotenv = require("dotenv");
 require("console-stamp")(console);
 dotenv.config({ path: "./config.env" });
 const { Telegraf, Scenes } = require("telegraf");
-const {
-  linkOl,
-  parseData,
-  musicParser,
-  infoUrl,
-  parserQism,
-  musicLangth,
-} = require("./parsing");
+const { infoUrl, parserQism, musicLangth } = require("./parsing");
 
+const krilLotin = require("./utility/lotinKril");
 const db = require("./model/index");
 const pageFunc = require("./utility/pagination");
 
@@ -30,8 +24,9 @@ let shart = 0;
 bot.start(async (ctx) => {
   console.log(ctx.update.message);
   const id = ctx.update.message.from.id;
+  const name = ctx.update.message.from.first_name;
 
-  const username = ctx.update.message.from.username || "No username";
+  const username = ctx.update.message.from.username || name;
   const user = await User.findOne({ where: { telegram_id: id } });
   if (!user) {
     const create = await User.create({
@@ -42,14 +37,14 @@ bot.start(async (ctx) => {
 
   ctx.telegram.sendMessage(
     id,
-    `Salom @${username}!\n Botga hush kelibsiz Bu bot Muztv.net saytidan qo'shiq qidirish uchun yaratildi qo'shiq nomini yoki qo'shiqchi nomini kiriting`
+    `Salom @${username}!\n Botga xush kelibsiz Bu bot Muztv.net saytidan qo'shiq qidirish uchun yaratildi qo'shiq nomini yoki qo'shiqchi nomini kiriting`
   );
 });
 
 bot.on("text", async (ctx) => {
   const id = ctx.update.message.from.id;
-  const username = ctx.update.message.from.username || "No username";
-  const text = ctx.update.message.text.trim().toLowerCase();
+  let text = ctx.update.message.text.trim().toLowerCase();
+  text = krilLotin(text);
   const mal1 = await musicLangth(text);
   console.log(mal1);
   let start = 0;
@@ -89,7 +84,7 @@ bot.on("callback_query", async (ctx) => {
     start = start + 10 >= end ? start + soni - end : start + 10;
 
     if (end >= soni) {
-      ctx.answerCbQuery(`Pagelar tugadi`, true);
+      ctx.answerCbQuery(`Sahifalar tugadi`, true);
     }
     let mal = await parserQism(text, start, end);
     ctx.telegram.deleteMessage(id, deleteM);
@@ -114,7 +109,7 @@ bot.on("callback_query", async (ctx) => {
 
     if (start < 0 || end == start) {
       console.log("ishla back");
-      ctx.answerCbQuery(`Pagelar tugadi`, true);
+      ctx.answerCbQuery(`Sahifalar tugadi`, true);
       return;
     }
     let mal = await parserQism(text, start, end);
@@ -165,22 +160,22 @@ bot.on("callback_query", async (ctx) => {
     const data3 = fs.readFileSync(`${__dirname}/${id}.mp3`);
 
     await ctx.telegram.sendAudio(id, data, {
-      caption: `${musicName} \n @muztv_vk_bot code by <a href='https://t.me/Aazizjon0313'>@zizjon</a>`,
+      caption: `${musicName} \n @muztv_vk_bot`,
       parse_mode: "HTML",
     });
   }
 });
 
-// bot.catch((err, msg) => {
-//   const id = msg.from.id;
-//   msg.telegram.sendMessage(
-//     id,
-//     `Dastur hali to'liq rejimga o'tmadi shuning uchun xatoliklar bo'lishi mumkin,${err.message}`,
-//     {
-//       reply_markup: {
-//         remove_keyboard: true,
-//       },
-//     }
-//   );
-// });
+bot.catch((err, msg) => {
+  const id = msg.from.id;
+  msg.telegram.sendMessage(
+    id,
+    `Dastur hali to'liq rejimga o'tmadi shuning uchun xatoliklar bo'lishi mumkin,${err.message}`,
+    {
+      reply_markup: {
+        remove_keyboard: true,
+      },
+    }
+  );
+});
 bot.launch();
