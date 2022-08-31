@@ -9,12 +9,12 @@ const { infoUrl, parserQism, musicLangth } = require("./parsing");
 const krilLotin = require("./utility/lotinKril");
 const db = require("./model/index");
 const pageFunc = require("./utility/pagination");
-
 const bot = new Telegraf(process.env.token, {
   polling: true,
 });
 
 const User = db.user;
+const Music = db.music;
 
 require("./model");
 
@@ -50,7 +50,29 @@ bot.start(async (ctx) => {
     `Salom @${username}!\n Botga hush kelibsiz Bu bot Muztv.net saytidan qo'shiq qidirish uchun yaratildi qo'shiq nomini yoki qo'shiqchi nomini kiriting`
   );
 });
-
+bot.command("musiclists", async (ctx) => {
+  const id = ctx.update.message.from.id;
+  const user = await User.findOne({ where: { telegram_id: id } });
+  // console.log(user);
+  if (!user) {
+    throw new Error("User not found");
+  }
+  const musics = await Music.findAll({ where: { user: user.id } });
+  let userSoni = `Userlar ro'yhati: ${musics.length} \n\n`;
+  let text = "";
+  let sana = 0;
+  for (let e of musics) {
+    console.log(e);
+    sana++;
+    text += `<b>id: ${e.dataValues.id} </b><b>${e.dataValues.name}</b> \n`;
+    if (sana == 5) {
+      ctx.telegram.sendMessage(id, userSoni + text, { parse_mode: "HTML" });
+      text = "";
+      sana = 0;
+    }
+  }
+  ctx.telegram.sendMessage(id, userSoni + text, { parse_mode: "HTML" });
+});
 bot.command("users", async (ctx) => {
   const id = ctx.update.message.from.id;
   const user = await User.findOne({
