@@ -6,6 +6,8 @@ require("console-stamp")(console);
 dotenv.config({ path: "./config.env" });
 const { Telegraf, Scenes } = require("telegraf");
 const { infoUrl, parserQism, musicLangth } = require("./parsing");
+const rateLimit = require("telegraf-ratelimit");
+
 const krilLotin = require("./utility/lotinKril");
 const db = require("./model/index");
 const pageFunc = require("./utility/pagination");
@@ -19,7 +21,12 @@ const Music = db.music;
 require("./model");
 
 let shart = 0;
-
+const limitConfig = {
+  window: 3000,
+  limit: 1,
+  onLimitExceeded: (ctx, next) => ctx.reply("Rate limit exceeded"),
+};
+bot.use(rateLimit(limitConfig));
 bot.start(async (ctx) => {
   console.log(ctx.update.message);
   const id = ctx.update.message.from.id;
@@ -373,103 +380,109 @@ bot.on("text", async (ctx) => {
 });
 
 bot.on("callback_query", async (ctx) => {
-  const id = ctx.update.callback_query.from.id;
-  const data = ctx.update.callback_query.data;
-  const deleteM = ctx.update.callback_query.message.message_id;
-  // const queryId = ctx.update.callback_query.id;
-  console.log(ctx.update);
+  try {
+    const id = ctx.update.callback_query.from.id;
+    const data = ctx.update.callback_query.data;
+    const deleteM = ctx.update.callback_query.message.message_id;
+    // const queryId = ctx.update.callback_query.id;
+    console.log(ctx.update);
 
-  if (data == "stop") {
-    ctx.telegram.deleteMessage(id, deleteM);
-  }
-
-  if (data.includes("next")) {
-    console.log("ishla next");
-
-    let end = data.split(" ")[1] * 1;
-    const soni = data.split(" ")[2] * 1;
-    let start = data.split(" ")[3] * 1;
-    let text = data.split(" ")[4];
-    end = end + 10 <= soni ? end + 10 : soni;
-    start = start + 10 >= end ? start + soni - end : start + 10;
-
-    if (end >= soni) {
-      ctx.answerCbQuery(`Pagelar tugadi`, true);
+    if (data == "stop") {
+      ctx.telegram.deleteMessage(id, deleteM);
     }
-    let mal = await parserQism(text, start, end);
-    ctx.telegram.deleteMessage(id, deleteM);
-    let umum = await pageFunc(mal, start, end, text, soni);
-    const kattaText = umum.kattaText;
-    const arr = umum.arr;
 
-    ctx.telegram.sendMessage(id, kattaText, {
-      parse_mode: "HTML",
-      reply_markup: {
-        inline_keyboard: arr,
-      },
-    });
-  }
-  if (data.includes("back")) {
-    let end = data.split(" ")[1] * 1;
-    const soni = data.split(" ")[2] * 1;
-    let start = data.split(" ")[3] * 1;
-    let text = data.split(" ")[4];
-    end = end - 10 < 0 ? soni : end == soni ? end - (soni - start) : end - 10;
-    start = start - 10 < 0 ? 0 : start - 10;
+    if (data.includes("next")) {
+      console.log("ishla next");
 
-    if (start < 0 || end == start) {
-      console.log("ishla back");
-      ctx.answerCbQuery(`Pagelar tugadi`, true);
-      return;
+      let end = data.split(" ")[1] * 1;
+      const soni = data.split(" ")[2] * 1;
+      let start = data.split(" ")[3] * 1;
+      let text = data.split(" ")[4];
+      end = end + 10 <= soni ? end + 10 : soni;
+      start = start + 10 >= end ? start + soni - end : start + 10;
+
+      if (end >= soni) {
+        ctx.answerCbQuery(`Pagelar tugadi`, true);
+      }
+      ctx.answerCbQuery(`Keyingi sahifa`, true);
+      let mal = await parserQism(text, start, end);
+      ctx.telegram.deleteMessage(id, deleteM);
+      let umum = await pageFunc(mal, start, end, text, soni);
+      const kattaText = umum.kattaText;
+      const arr = umum.arr;
+
+      ctx.telegram.sendMessage(id, kattaText, {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: arr,
+        },
+      });
     }
-    let mal = await parserQism(text, start, end);
+    if (data.includes("back")) {
+      let end = data.split(" ")[1] * 1;
+      const soni = data.split(" ")[2] * 1;
+      let start = data.split(" ")[3] * 1;
+      let text = data.split(" ")[4];
+      end = end - 10 < 0 ? soni : end == soni ? end - (soni - start) : end - 10;
+      start = start - 10 < 0 ? 0 : start - 10;
 
-    let umum = await pageFunc(mal, start, end, text, soni);
-    const kattaText = umum.kattaText;
-    const arr = umum.arr;
-    console.log(start, end);
-    ctx.telegram.deleteMessage(id, deleteM);
+      if (start < 0 || end == start) {
+        console.log("ishla back");
+        ctx.answerCbQuery(`Pagelar tugadi`, true);
+        return;
+      }
+      ctx.answerCbQuery(`Oldingi sahifa`, true);
+      let mal = await parserQism(text, start, end);
 
-    ctx.telegram.sendMessage(id, kattaText, {
-      parse_mode: "HTML",
-      reply_markup: {
-        inline_keyboard: arr,
-      },
-    });
-    start = umum.start;
-    end = umum.end;
-  }
-  let son = data * 1;
-  if (Number.isInteger(son)) {
-    let uzun =
-      ctx.update.callback_query.message.reply_markup.inline_keyboard.length;
-    const ish =
-      ctx.update.callback_query.message.reply_markup.inline_keyboard[
-        uzun - 1
-      ][0].callback_data;
-    console.log(ish);
+      let umum = await pageFunc(mal, start, end, text, soni);
+      const kattaText = umum.kattaText;
+      const arr = umum.arr;
+      console.log(start, end);
+      ctx.telegram.deleteMessage(id, deleteM);
 
-    let end = ish.split(" ")[1] * 1;
-    let start = ish.split(" ")[3] * 1;
-    let text = ish.split(" ")[4];
-    const music = await parserQism(text, start, end);
-    let url = music[son].url;
-    let musicName = music[son].name;
-    const data = await infoUrl(url, id);
-    if (!data) {
+      ctx.telegram.sendMessage(id, kattaText, {
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: arr,
+        },
+      });
+      start = umum.start;
+      end = umum.end;
     }
-    ctx.answerCbQuery(`Yuklab Olindi`, true);
-    // await ctx.telegram.sendMessage(id, "Yuklab Olindi");
-    const user = await User.findOne({ where: { telegram_id: id } });
-    const userId = user.dataValues.id;
-    const create = await db.music.create({
-      name: musicName,
-      user: userId,
-    });
-    await ctx.telegram.sendAudio(id, data, {
-      caption: `${musicName} \n @muztv_vk_bot code by <a href='https://t.me/Aazizjon0313'>@zizjon</a>`,
-      parse_mode: "HTML",
-    });
+    let son = data * 1;
+    if (Number.isInteger(son)) {
+      let uzun =
+        ctx.update.callback_query.message.reply_markup.inline_keyboard.length;
+      const ish =
+        ctx.update.callback_query.message.reply_markup.inline_keyboard[
+          uzun - 1
+        ][0].callback_data;
+      console.log(ish);
+
+      let end = ish.split(" ")[1] * 1;
+      let start = ish.split(" ")[3] * 1;
+      let text = ish.split(" ")[4];
+      const music = await parserQism(text, start, end);
+      let url = music[son].url;
+      let musicName = music[son].name;
+      const data = await infoUrl(url, id);
+      if (!data) {
+      }
+      ctx.answerCbQuery(`Yuklab Olindi`, true);
+      // await ctx.telegram.sendMessage(id, "Yuklab Olindi");
+      const user = await User.findOne({ where: { telegram_id: id } });
+      const userId = user.dataValues.id;
+      const create = await db.music.create({
+        name: musicName,
+        user: userId,
+      });
+      await ctx.telegram.sendAudio(id, data, {
+        caption: `${musicName} \n @muztv_vk_bot code by <a href='https://t.me/Aazizjon0313'>@zizjon</a>`,
+        parse_mode: "HTML",
+      });
+    }
+  } catch (e) {
+    throw new Error(e.message);
   }
 });
 
